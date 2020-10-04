@@ -1,0 +1,221 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-reader.ss" "lang")((modname |lp store map and filter|) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #t)))
+;; LP Store
+
+;; Problem 1
+
+(define-struct lp (title artist price copies genre))
+;; an LP is a (make-lp String String Number Natural String)
+;; interp:  a long-playing record where
+;;    title is the title of the LP
+;;    artist is the artist
+;;    price is the price
+;;    copies is the number of copies of the LP in stock
+;;    genre is the genre
+
+
+;; example
+(make-lp "Messiah" "Handel" 17.98 100 "classical")
+
+
+;; Problem 2
+;; make-lp:  String String Number Number String -> LP
+;; lp-title:  LP -> String
+;; lp-artist:  LP -> String
+;; lp-price:  LP -> Number
+;; lp-copies:  LP -> Number
+;; lp-genre:  LP -> String
+;; lp?:  anything -> Boolean
+
+;; Problem 3
+
+;; an Inventory (ListOfLP) is either
+;; empty, or
+;; (cons LP ListOfLP)
+
+
+;; Example
+(define CLASSICAL (cons (make-lp "Messiah" "Handel" 17.98 100 "classical")
+                        (cons (make-lp "Motets" "Brueckner" 16.98 40 "classical") empty)))
+                       
+
+
+;; Problem 4
+
+;;; lp-fcn:  LP -> 
+;;; 
+;(define (lp-fcn alp ...)
+;  (lp-title alp)
+;  (lp-artist alp)
+;  (lp-price alp)
+;  (lp-copies alp)
+;  (lp-genre alp))
+;
+;;; inventory-fcn:  Inventory -> 
+;;; 
+;(define (inventory-fcn alolp )
+;  (cond [(empty? alolp) (...)]
+;        [(cons? alolp) (...(lp-fcn (first alolp))
+;                           (inventory-fcn (rest alolp))]))
+
+
+;; Problem 5
+;; copies-in-stock:  String String Inventory -> Natural
+;; consumes the title and artist and an inventory and produces
+;; the number of the given LP that are in stock
+(define (copies-in-stock title artist alolp)
+  (cond [(empty? alolp) 0]
+        [(cons? alolp) (if (target-lp? title artist (first alolp))
+                           (lp-copies (first alolp))
+                           (copies-in-stock title artist (rest alolp)))]))
+
+;; target-lp?:  String String LP -> Boolean
+;; consumes a title and artist and returns true if the
+;; given LP has that title and artist
+(define (target-lp? title artist alp)
+  (and (string=? (lp-title alp) title)
+       (string=? (lp-artist alp) artist)))
+
+;; Tests
+(check-expect (target-lp? "Sounds of Silence" "Simon and Garfunkel" (make-lp "Happy Birthday" "Hamel" .50 10 "general"))  false)
+(check-expect (target-lp? "Messiah" "Handel" (make-lp "Messiah" "Handel" 17.98 100 "classical")) true)
+
+(check-expect (copies-in-stock "Messiah" "Handel" CLASSICAL) 100)
+(check-expect (copies-in-stock "Messiah" "Handel" empty) 0)
+(check-expect (copies-in-stock "Help" "Beatles" CLASSICAL) 0)
+
+
+;; Problem 6
+;; restock: String Natural Inventory -> Inventory
+;; consumes a title, a number of new copies, and an Inventory
+;; The function produces an inventory in which the named LP
+;; has the given number of additional copies
+(define (restock title new-copies alolp)
+  (cond [(empty? alolp) empty]
+        [(cons? alolp) (cons (add-lps title new-copies (first alolp))
+                             (restock title new-copies (rest alolp)))]))
+
+;; add-lps:  String Natural LP -> LP
+;; consumes a lp title and the number of additional copies
+;; and produces a LP.  The produced LP has the number of copies
+;; increased by new-copies if the title of the lp matches the
+;; title given, otherwise the lp returned is the same as the
+;; original
+(define (add-lps title new-copies alp)
+  (cond [(string=? (lp-title alp) title)
+         (make-lp (lp-title alp)
+                  (lp-artist alp)
+                  (lp-price alp)
+                  (+ new-copies (lp-copies alp))
+                  (lp-genre alp))]
+        [else alp]))
+
+;; tests
+(check-expect (add-lps "Messiah" 12 (make-lp "Messiah" "Handel" 17.98 100 "classical"))
+              (make-lp "Messiah" "Handel" 17.98 112 "classical"))
+(check-expect (add-lps "Yesterday" 55 (make-lp "Messiah" "Handel" 17.98 100 "classical"))
+              (make-lp "Messiah" "Handel" 17.98 100 "classical"))
+
+(check-expect (restock "Motets" 15 CLASSICAL)
+              (cons (make-lp "Messiah" "Handel" 17.98 100 "classical")
+                    (cons (make-lp "Motets" "Brueckner" 16.98 55 "classical") empty)))
+
+;; Problem 7
+;; titles-by:  String Inventory -> ListOfString
+;; consumes an artist's name and an inventory and produces a 
+;; list of titles of LP's by that artist
+(define (titles-by an-art alolp)
+  (cond [(empty? alolp) empty]
+        [(cons? alolp) 
+         (if (target-artist? an-art (first alolp))
+             (cons (lp-title (first alolp))
+                   (titles-by an-art (rest alolp)))
+             (titles-by an-art (rest alolp)))]))
+
+;;using map
+;;titles-by: String ListOfLP -> ListOfString
+;;consumes the name of an artist and a list of LP's and produces a list of the titles of ll LPs by the given artist
+
+(define (titles-bye name alolp)
+  (local [(define (by-artist? an-lp)
+            (string=? name (lp-artist an-lp)))]
+  (map lp-title (filter  alolp))))
+
+
+
+;; target-artist?:  String LP -> Boolean
+;; produces true if the LP is by the given artist,
+;; produces false otherwise
+(define (target-artist? an-art alp)
+  (string=? an-art (lp-artist alp)))
+
+;; tests
+(check-expect (target-artist? "Handel" (make-lp "Messiah" "Handel" 17.98 200 "classical"))
+              true)
+(check-expect (titles-by "Handel" CLASSICAL) (cons "Messiah" empty))
+(check-expect (titles-by "Handel" empty) empty)
+
+
+;; Problem 8
+;; blues-sale: Inventory -> Inventory
+;; consumes an inventory and produces an inventory in which
+;; each blues LP is discounted by 10%
+(define (blues-sale alolp)
+  (cond [(empty? alolp) empty]
+        [(cons? alolp) (cons (discount-if-blues (first alolp))
+                             (blues-sale (rest alolp)))]))
+
+;; discount-if-blues:  LP -> LP
+;; consumes a lp.  If that lp is a blues lp, then the
+;; lp that is returned is discounted by 10%.  Otherwise,
+;; the lp that is returned is the same as the original
+(define (discount-if-blues alp)
+  (cond [(string=? "blues"  (lp-genre alp))
+         (make-lp (lp-title alp)
+                  (lp-artist alp)
+                  (* .9 (lp-price alp))
+                  (lp-copies alp)
+                  (lp-genre alp))]
+        [else alp]))
+
+;; tests
+(check-expect (discount-if-blues (make-lp "Messiah" "Handel" 17.98 200 "classical")) 
+              (make-lp "Messiah" "Handel" 17.98 200 "classical"))
+(check-expect (discount-if-blues (make-lp "Blues Brothers" "Blues Brothers" 12.00 123 "blues"))
+              (make-lp "Blues Brothers" "Blues Brothers" 10.80 123 "blues"))
+
+(check-expect (blues-sale CLASSICAL) CLASSICAL)
+(check-expect (blues-sale (cons (make-lp "Blues Brothers" "Blues Brothers" 12.00 123 "blues") CLASSICAL))
+              (cons (make-lp "Blues Brothers" "Blues Brothers" 10.80 123 "blues") CLASSICAL))
+
+;; problem 9
+
+;; category-stock:  String Inventory -> Inventory
+;; consumes a music category and an inventory.  It produces an
+;; inventory of all lp's from the original inventory that are
+;; of the named category and have more than 0 copies in  stock
+(define (category-stock category alolp)
+  (cond [(empty? alolp) empty]
+        [(cons? alolp) 
+         (if (more-than-0-genre? category (first alolp))
+             (cons (first alolp)
+                   (category-stock category (rest alolp)))
+             (category-stock category (rest alolp)))]))
+
+;; more-than-0-genre?: String LP -> Boolean
+;; consumes a name of a category and a lp and returns
+;; true if the lp is of that category and has more
+;; than 0 copies in stock
+(define (more-than-0-genre? category alp)
+  (and (string=? (lp-genre alp) category)
+       (> (lp-copies alp) 0)))
+
+;; tests
+(check-expect (more-than-0-genre? "blues" (make-lp "Messiah" "Handel" 17.98 200 "classical"))
+              false)
+(check-expect (more-than-0-genre? "blues" (make-lp "Blues Brothers" "Blues Brothers" 12.95 123 "blues"))
+              true)
+
+(check-expect (category-stock "blues" CLASSICAL) empty)
+(check-expect (category-stock "classical" CLASSICAL) CLASSICAL)

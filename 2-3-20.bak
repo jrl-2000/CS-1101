@@ -1,0 +1,69 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname 2-3-20) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #t)))
+(define-struct course (dept coursenum term sections seats))
+;; a Course is a (make-course String Natural String Natural Natural)
+;; interp:  a course at WPI, where
+;;   dept is the department that offers the course
+;;   coursenum is the course number
+;;   term is the term the course is offered (assume only 1)
+;;   sections is the number of sections of the course
+;;   seats is the number of seats per section
+
+(define MA2201 (make-course "MA" 2201 "A" 8 30))
+
+; ;; course-fcn:  Course ->
+; ;;
+; (define (course-fcn a-course)
+;   (... (course-dept a-course)
+;        (course-coursenum a-course)
+;        (course-term a-course)
+;        (course-sections a-course)
+;        (course-seats a-course)))
+; 
+; 
+
+
+;; a ListOfCourse is one
+;;   empty
+;;   (cons Course ListOfCourse)
+
+(define SCHED (cons (make-course "CS" 1101 "C" 6 25) (cons MA2201 empty)))
+
+; ;; loc-fcn:  ListOfCourse ->
+; ;;
+; (define (loc-fcn aloc)
+;   (cond [(empty? aloc) (...)    ]
+;         [(cons? aloc)   (... (course-fcn (first aloc))
+;                              (loc-fcn (rest aloc)))]))
+; 
+
+
+;; course-capacity:  ListOfCourse -> Natural
+;; consumes a list of courses and produces the total number of seats in all
+;; sections in all courses in the list
+(define (course-capacity aloc)
+  (cond [(empty? aloc) 0   ]
+        [(cons? aloc)   (+ (capacity-of-one (first aloc))
+                           (course-capacity (rest aloc)))]))
+
+(check-expect (course-capacity SCHED) 390)
+(check-expect (course-capacity empty) 0)
+
+;; capacity-of-one:  Course -> Natural
+;; consumes a course and produces the number of seats in all sections of the course
+(define (capacity-of-one a-course)
+  (* 
+   (course-sections a-course)
+   (course-seats a-course)))
+
+(check-expect (capacity-of-one (make-course "CS" 1101 "C" 6 25)) 150)
+
+
+;; TRY THIS PROBLEM TONIGHT
+
+;; any-cs-in-b?:  ListOfCourse -> Boolean
+;; consumes a list of courses and produces true if any of the courses in the
+;; list are CS courses offered in B-term
+
+
