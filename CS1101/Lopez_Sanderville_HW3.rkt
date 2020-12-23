@@ -1,0 +1,204 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname Lopez-Sanderville-HW3) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;;Jonathan Lopez, Tyler Sanderville
+;;jrlopez, tasanderville
+;;jrlopez@wpi.edu
+;;tasanderville@wpi.edu
+
+;;group 1072
+
+;;HW 3
+
+
+
+;;problem 1
+
+; make-borrower: String String String Number Number -> Borrower
+(define-struct borrower (name origin-country business request-loan percentage))
+
+;;a Borrower is a (make-borrower String String String Number Number)
+;;interpretation represents a Borrower where
+;;     name is the name of the borrower
+;;      origin-country is the country if origin of the borrower
+;;      business is the business is the kind of business the funds are needed for
+;;      request-loan is the funds requested
+;;      percentage is the percentage the loan raised so far
+
+
+;; 3 examples
+(define BORROWER1 (make-borrower "Tyler" "United States" "Construction" 12000 .00))
+(define BORROWER2 (make-borrower "Jon" "Canada" "Aviation" 1000 .30))
+(define BORROWER3 (make-borrower "Joe" "Great Britain" "IT" 5000 .20))
+
+
+;;template
+;; borrower-fcn: Borrower ->
+
+#;(define (borrower-fcn a-borrower)
+   (... (borrower-name a-borrower)
+        (borrower-origin-country a-borrower)
+        (borrower-business a-borrower)
+        (borrower-request-loan a-borrower)
+        (borrower-percentage a-borrower)))
+
+
+
+;;Problem 2
+
+
+;; a ListOfBorrower is one of
+;;  empty
+;;  (cons String Number ListOfBorrower)
+;; interp:  ListOfBorrower represents a list of Borrowers
+
+;;example
+(define BORROWERS (cons BORROWER1 (cons BORROWER2 (cons BORROWER3 empty))))
+
+
+;;template
+
+;;lob-fcn: ListofBorrower ->
+
+#;(define (lob-fcn alob)
+  (cond [(empty? alob) (...) ]
+        [(cons? alob) (... (borrower-fcn (first alob))
+                           (lob-fcn (rest alob)))]))
+
+;;Problem 3
+
+;;any-from?: ListOfBorrower String-> Boolean
+;;Consumes a LoB and a string and produces true if any strings in
+;; borrower-origin-country match the input string
+
+(define (any-from? alob country)
+  (cond [(empty? alob) false]
+        [(cons? alob) (if (help-any-from? (first alob) country)
+                          true
+                          (any-from? (rest alob) country))]))
+                       
+
+;;Helper Function
+;;help-any-from?: a-borrower, String-> Boolean
+;; This functions consumes a borrower and a string and produces true if the
+;; origin country of a-borrower
+
+(define (help-any-from? a-borrower country)
+   (if  (string=? country (borrower-origin-country a-borrower))
+        true
+        false
+        ))
+
+;;tests for any-from
+
+(check-expect (any-from? BORROWERS "Canada") true)
+(check-expect (any-from? (cons BORROWER2 (cons BORROWER3 empty)) "United States") false)
+(check-expect (any-from? empty "Cuba") false)
+
+;;tests for helper function
+
+(check-expect (help-any-from? BORROWER2 "Canada") true)
+(check-expect (help-any-from? BORROWER2 "Iceland") false)
+
+;; Problem 4
+
+;;find-by-business: ListOfBorrower String-> ListOfBorrower
+;;Consumes a LoB and a string and produces a LoB if any strings in the business match the business of the borrowers
+
+(define (find-by-business alob request-business)
+   (cond [(empty? alob) empty ]
+         [(cons? alob) (if (check-business? (first alob) request-business)
+                           (cons (make-borrower (borrower-name (first alob))
+                      (borrower-origin-country (first alob))
+                      (borrower-business (first alob))
+                      (borrower-request-loan (first alob))
+                      (borrower-percentage (first alob)))
+                                 (find-by-business (rest alob) request-business))
+                                          (find-by-business (rest alob) request-business))]))
+ 
+
+;;Helper Function
+;;check-business: Borrower String -> Boolean
+;; consumes a borrower and a string and produces true if the given string is the same as the borrower's company type.
+
+
+(define (check-business? a-borrower request)
+   (if (string=? (borrower-business a-borrower) request)
+       true
+       false))
+        
+
+;;test helper function
+(check-expect (check-business? BORROWER1 "Construction") true)
+(check-expect (check-business? BORROWER2 "Construction") false)
+
+;;tests for find-by-business
+(check-expect (find-by-business BORROWERS "Construction") (cons (make-borrower "Tyler" "United States" "Construction" 12000 .00) empty)) ;(cons empty (cons empty empty))))
+(check-expect (find-by-business empty "Construction") empty)
+(check-expect (find-by-business (cons BORROWER2 (cons BORROWER1 (cons BORROWER1 empty))) "Construction") (cons (make-borrower "Tyler" "United States" "Construction" 12000 .00)(cons (make-borrower "Tyler" "United States" "Construction" 12000 .00) empty)))
+
+;;Problem 5
+
+
+;;no-funds-pledged: ListOfBorrower -> ListOfBorrowerName 
+;; consumes a LoB and produces a list of the names of the
+;; borrowers who don't have any funds pledged
+
+(define (no-funds-pledged alob)
+  (cond [(empty? alob) empty]
+        [(cons? alob)  (if (no-funds-pledged-helper? (first alob))
+                             (cons (borrower-name (first alob)) (no-funds-pledged (rest alob)))
+                             (no-funds-pledged (rest alob)))]))
+                           
+
+
+;;no-funds-pledged-helper?: a-borrower-> Boolean
+;; consumes a borrower and produces true if the amount pledged is 0
+
+(define (no-funds-pledged-helper? a-borrower)
+   (if (= (borrower-percentage a-borrower) .00)
+      true
+      false)
+       )
+
+
+;;Tests
+
+(check-expect (no-funds-pledged BORROWERS) (list "Tyler"))
+(check-expect (no-funds-pledged (cons BORROWER2 (cons BORROWER1 (cons (make-borrower "Joe" "Great Britain" "IT" 5000 .00) empty)))) (cons "Tyler" (cons "Joe" empty)))
+(check-expect (no-funds-pledged empty) empty)
+
+;;tests for helper
+
+(check-expect (no-funds-pledged-helper? BORROWER1) true)
+(check-expect (no-funds-pledged-helper? BORROWER2) false)
+
+;;Problem 6
+
+;;funds-needed: ListOfBorrowers -> Natural
+;; consumes a LoB and produces the amount of money that
+;; the borrowers still need
+
+(define (funds-needed alob)
+  (cond [(empty? alob)  0]
+        [(cons? alob) (+ (funds-needed-helper (first alob))
+                           (funds-needed (rest alob)))]))
+
+;; funds-needed-helper: a-borrower-> Natural
+;; Consumes a borrower and produces a natural representing how much more money is needed
+
+(define (funds-needed-helper a-borrower)
+    (- (borrower-request-loan a-borrower) (* (borrower-request-loan a-borrower) (borrower-percentage a-borrower))))
+
+
+;;Tests
+
+(check-expect (funds-needed empty) 0)
+(check-expect (funds-needed BORROWERS) (+ 700 12000 4000))
+
+
+;;Tests for helper
+
+(check-expect (funds-needed-helper BORROWER1) 12000)
+(check-expect (funds-needed-helper BORROWER2) 700)
+
